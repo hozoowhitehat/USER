@@ -1,74 +1,77 @@
 #!/bin/bash
+clear
+sleep 1
+#!/bin/bash
 
-# Tools Usermod Management
-# Pastikan script ini dijalankan dengan hak akses root (sudo)
+# Fungsi untuk menampilkan menu
+show_menu() {
+    echo "======================================"
+    echo "           Usermod Tools              "
+    echo "======================================"
+    sleep 1
+    echo "1. Tambahkan pengguna ke grup"
+    echo "2. Hapus pengguna dari grup"
+    echo "3. Ubah shell login pengguna"
+    echo "4. Kunci (lock) akun pengguna"
+    echo "5. Buka kunci (unlock) akun pengguna"
+    echo "6. Tampilkan informasi pengguna"
+    echo "7. Keluar"
+    echo "======================================"
+    echo -n "Pilih opsi [1-7]: "
+}
 
-# Cek apakah script dijalankan dengan sudo
-if [[ $EUID -ne 0 ]]; then
-    echo "Script ini harus dijalankan dengan sudo!"
-    exit 1
-fi
-
-# Menu
-echo "==================================="
-echo "       User Management Tools       "
-echo "==================================="
-echo "1. Tambah Pengguna"
-echo "2. Hapus Pengguna"
-echo "3. Ubah Grup Pengguna"
-echo "4. Nonaktifkan Pengguna"
-echo "5. Aktifkan Pengguna"
-echo "6. Ubah Password Pengguna"
-echo "7. Tampilkan Daftar Pengguna"
-echo "8. Keluar"
-echo "==================================="
-
-# Masukkan Pilihan
-read -p "Masukkan pilihan Anda [1-8]: " pilihan
-
-# Proses Pilihan
-case $pilihan in
-1)
-    read -p "Masukkan nama pengguna baru: " username
-    read -p "Masukkan grup (default: users): " group
-    group=${group:-users}
-    useradd -m -g $group $username
-    echo "Pengguna $username telah ditambahkan."
-    ;;
-2)
-    read -p "Masukkan nama pengguna yang akan dihapus: " username
-    userdel -r $username
-    echo "Pengguna $username telah dihapus."
-    ;;
-3)
+# Fungsi untuk menambah pengguna ke grup
+add_user_to_group() {
     read -p "Masukkan nama pengguna: " username
-    read -p "Masukkan grup baru: " group
-    usermod -g $group $username
-    echo "Grup pengguna $username telah diubah ke $group."
-    ;;
-4)
-    read -p "Masukkan nama pengguna yang akan dinonaktifkan: " username
-    usermod -L $username
-    echo "Pengguna $username telah dinonaktifkan."
-    ;;
-5)
-    read -p "Masukkan nama pengguna yang akan diaktifkan: " username
-    usermod -U $username
-    echo "Pengguna $username telah diaktifkan."
-    ;;
-6)
-    read -p "Masukkan nama pengguna yang akan diubah passwordnya: " username
-    passwd $username
-    ;;
-7)
-    echo "Daftar pengguna:"
-    cut -d: -f1 /etc/passwd
-    ;;
-8)
-    echo "Keluar."
-    exit 0
-    ;;
-*)
-    echo "Pilihan tidak valid. Silakan coba lagi."
-    ;;
-esac
+    read -p "Masukkan nama grup: " groupname
+    usermod -aG "$groupname" "$username" && echo "Berhasil menambahkan $username ke grup $groupname" || echo "Gagal menambahkan pengguna"
+}
+
+# Fungsi untuk menghapus pengguna dari grup
+remove_user_from_group() {
+    read -p "Masukkan nama pengguna: " username
+    read -p "Masukkan nama grup: " groupname
+    gpasswd -d "$username" "$groupname" && echo "Berhasil menghapus $username dari grup $groupname" || echo "Gagal menghapus pengguna"
+}
+
+# Fungsi untuk mengubah shell pengguna
+change_user_shell() {
+    read -p "Masukkan nama pengguna: " username
+    read -p "Masukkan shell baru (contoh: /bin/bash): " shell
+    usermod -s "$shell" "$username" && echo "Shell pengguna $username diubah menjadi $shell" || echo "Gagal mengubah shell"
+}
+
+# Fungsi untuk mengunci akun
+lock_user_account() {
+    read -p "Masukkan nama pengguna: " username
+    usermod -L "$username" && echo "Akun $username berhasil dikunci" || echo "Gagal mengunci akun"
+}
+
+# Fungsi untuk membuka kunci akun
+unlock_user_account() {
+    read -p "Masukkan nama pengguna: " username
+    usermod -U "$username" && echo "Akun $username berhasil dibuka" || echo "Gagal membuka akun"
+}
+
+# Fungsi untuk menampilkan informasi pengguna
+show_user_info() {
+    read -p "Masukkan nama pengguna: " username
+    id "$username" && grep "^$username" /etc/passwd || echo "Pengguna tidak ditemukan"
+}
+
+# Main program
+while true; do
+    show_menu
+    read choice
+    case $choice in
+        1) add_user_to_group ;;
+        2) remove_user_from_group ;;
+        3) change_user_shell ;;
+        4) lock_user_account ;;
+        5) unlock_user_account ;;
+        6) show_user_info ;;
+        7) echo "Keluar..."; exit 0 ;;
+        *) echo "Pilihan tidak valid!" ;;
+    esac
+    echo ""
+done
